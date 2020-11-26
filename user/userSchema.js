@@ -70,3 +70,6 @@ admin:{
     default: []
   }
 })
+
+const User = mongoose.model("User", userSchema)
+module.export =  { User } 
