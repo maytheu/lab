@@ -5,6 +5,10 @@ const SALT_I = 10;
 require("dotenv").config();
 const crypto = require("crypto");
 
+//max login attemot = 5 ahd you can onkybtry again after 2hrs
+const MAX_LOGIN_ATTEMPTS = 5
+ const   LOCK_TIME = 2 * 60 * 60 * 1000;
+
 const userSchema = mongoose.Schema({ 
 email: {
     type: String,
@@ -73,8 +77,22 @@ admin:{
 	note: {
     type: Array,
     default: []
-  }
+  },
+	loginAttempts: { 
+		type: Number, 
+		required: true,
+		default: 0 },
+    lockUntil: {
+	    type: Number 
+    },
+	lastLogin: Date
 })
+
+userSchema.virtual('isLocked').get(function() {
+// check for a future lockUntil timestamp
+return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
 
 //confirm user password before saving
 //https://www.mongodb.com/blog/post/password-authentication-with-mongoose-part-1 
@@ -98,9 +116,6 @@ userSchema.pre("save", function(next) {
 });
 
 //compare users password with hash to login
-//bcrypt.compare("B4c0/\/", hash).then((res) => {
-    // res === true
-//});
 userSchema.methods.comparePassword = function(candidatePassword, cb) {
   bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
     if (err) return cb(err);
@@ -108,5 +123,80 @@ userSchema.methods.comparePassword = function(candidatePassword, cb) {
     cb(null, isMatch);
   });
 };
+
+
+userSchema.methods.incLoginAttempts = function(cb) { 
+	// if we have a previous lock that has expired, restart at 1
+	if (this.lockUntil && this.lockUntil < Date.now()) { 
+		return this.update({ $set: { loginAttempts: 1 }, $unset: { lockUntil: 1 } }, cb);
+	} 
+	// otherwise we're incrementing
+	var updates = { $inc: { loginAttempts: 1 } };
+	// lock the account if we've reached max attempts and it's not locked already
+	if (this.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
+		updates.$set = { lockUntil: Date.now() + LOCK_TIME };
+	}
+	return this.update(updates, cb);
+};
+
+
+
+userSchema.statics.getAuthenticated = function(username, password, isEmail, cb) {
+	let obj; 
+	if(isEmail){
+		obj= { email: username}
+	}else {
+		obj = { username}
+	}
+	this.findOne(obj, function(err, user) {
+    // make sure the user exists
+    if (!user) {
+        return cb(null, null, "NOT_FOUND");
+    }
+
+    // check if the account is currently locked
+    if (user.isLocked) {
+        // just increment login attempts if account is already locked
+        return user.incLoginAttempts(function(err) {
+            if (err) return cb(err);
+            return cb(null, null, "MAX_ATTEMPT")
+        });
+	    
+    }
+
+    // test for a matching password
+    user.comparePassword(password, function(err, isMatch) {
+        if (err) return cb(err);
+
+        // check if the password was a match
+        if (isMatch) {
+            // if there's no lock or failed attempts, just return the user
+            if (!user.loginAttempts && !user.lockUntil) return cb(null, user);
+            // reset attempts and lock info
+            var updates = {
+                $set: { loginAttempts: 0 },
+                $unset: { lockUntil: 1 }
+            };
+            return user.update(updates, function(err) {
+                if (err) return cb(err);
+                return cb(null, user);
+            });
+        }
+return cb(null, null, "PASSWORD_INCORRECT")
+
+    });
+});
+};
+
+
+userSchema.methods.generateToken = function(cb) {
+  var user = this;
+  var token = jwt.sign(user._id.toHexString(), process.env.SECRET);
+  user.token = token;
+  user.save(function(err, user) {
+    if (err) return cb(err);
+    cb(null, user);
+  });
+}
 
 mongoose.model("users", userSchema)

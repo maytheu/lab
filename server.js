@@ -2,6 +2,8 @@ const express = require ('express')
 const bodyParser = require("body-parser")
 const mongoose = require("mongoose")
 const cors = require("cors")
+const cookieParser = require("cookie-parser")
+
 
 require("dotenv").config()
 
@@ -18,6 +20,9 @@ mongoose.connect(process.env.DB_URL,{useNewUrlParser: true, useUnifiedTopology: 
 
 //hody parser set up
 app.use(bodyParser.urlencoded({extended: false}))
+
+//cookie paser
+app.use(cookieParser())
 
 //adding cors
 app.use(cors())
