@@ -3,6 +3,8 @@ const mongoose = require('mongoose')
 const User = mongoose.model('users')
 const {Experiment}= require("./experimentSchema.js")
 
+const  authUser = require("./authUser.js")
+
 module.exports = (app) =>{
 	app.get("/", (req, res) =>{
 		console.log(validateEmail("maytheu@gmail.com"))
@@ -39,7 +41,7 @@ module.exports = (app) =>{
 });
 
 
-	app.get("/api/user/login", (req, res) => {
+	app.post("/api/user/login", (req, res) => {
 let isEmail = validateEmail(req.body.email)
 	
   User.getAuthenticated(req.body.email, req.body.password, isEmail, function(err, user, reason) {
@@ -81,4 +83,14 @@ let isEmail = validateEmail(req.body.email)
 }
 })
 });
+
+app.get("/api/user/logout", authUser, (req, res) => {
+  User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, doc) => {
+    if (err) return res.json({ success: false, err });
+    return res.status(200).send({
+      success: true
+    });
+  });
+});
+
 }
