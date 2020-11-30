@@ -13,6 +13,4 @@ const experimentSchema = mongoose.Schema({
         }
 })
 
-const Experiment = mongoose.model("Experiment", experimentSchema)
-
-module.export ={Experiment}
+mongoose.model("experiments", experimentSchema)

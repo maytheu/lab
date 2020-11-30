@@ -7,6 +7,4 @@ const subjectSchema = mongoose.Schema({
         }
 })
 
-const Subject = mongoose.model("Subject", subjectSchema)
-
-module.export ={Subject}
+ mongoose.model("subjects", subjectSchema)

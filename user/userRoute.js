@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
 
 const User = mongoose.model('users')
-const {Experiment}= require("./experimentSchema.js")
+const Experiment= mongoose.model("experiments")
 
 const  authUser = require("./authUser.js")
+const authTeacher = require("./authTeacher.js")
 
 module.exports = (app) =>{
 	app.get("/", (req, res) =>{
@@ -84,7 +85,24 @@ let isEmail = validateEmail(req.body.email)
 })
 });
 
-app.get("/api/user/logout", authUser, (req, res) => {
+app.get("/api/user/profile", authUser, (req, res)=>{
+	User.findOne({_id: req.user._id}, (err, user) =>{
+		if (err) return res.json({success: false, err})
+		return res.status(200).send({                       success: true, user
+    });
+	})
+})
+
+app.post("/api/user/update_profile", authUser, (req, res)=>{                                                        User.findOneAndUpdate({_id: req.user._id},
+	{ $set:req.body },
+	{ new: true },
+	(err, user) =>{                                                           if (err) return res.json({success: false, err})
+		return res.status(200).send({
+                  success: true, user                 });
+        })                                        })
+
+
+app.get("/api/user/logout", authUser,(req, res) => {
   User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, doc) => {
     if (err) return res.json({ success: false, err });
     return res.status(200).send({
