@@ -2,6 +2,9 @@ const mongoose = require('mongoose')
 
 const User = mongoose.model('users')
 const Experiment= mongoose.model("experiments")
+const Subject = mongoose.model("subjects")
+const Topic = mongoose.model("topics")
+const Student = mongoose.model("students")
 
 const  authUser = require("./authUser.js")
 const authTeacher = require("./authTeacher.js")
@@ -45,7 +48,7 @@ module.exports = (app) =>{
 	app.post("/api/user/login", (req, res) => {
 let isEmail = validateEmail(req.body.email)
 	
-  User.getAuthenticated(req.body.email, req.body.password, isEmail, function(err, user, reason) {
+  User.getAuthenticated(req.body.email,req.body.password, isEmail, function(err, user, reason) {
 	  console.log("err"+err)
 	  console.log("readon "+reason)
     if (!user) {
@@ -99,8 +102,33 @@ app.post("/api/user/update_profile", authUser, (req, res)=>{                    
 	(err, user) =>{                                                           if (err) return res.json({success: false, err})
 		return res.status(200).send({
                   success: true, user                 });
+const Subject = mongoose.model("Experiment", experimentSchema)
         })                                        })
 
+app.get("/api/user/subject", authUser, (req, res) =>{
+	Subject.find({}, (err, exp) =>{
+		if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, exp });
+	})
+})
+
+//usage http://...../api/user/topic/physics
+//Returns array of object of topics
+app.get("/api/user/topic/:subject", authUser, (req,res) =>{
+	let subject = req.params.subject.toLowerCase()
+	subject = subject.charAt(0).toUpperCase()+subject.slice(1)
+
+	Topic.find({subject},(err, topic) =>{
+		if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, topic });
+	})
+})
+
+//mighf change to query later
+app.get("/api/user/exp/:exp", authUser, (req, res) =>{
+	const exp = req.params.exp
+	Experiment.find({topic:exp}, (err, doc) =>{
+		if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, doc});
+	})
+})
 
 app.get("/api/user/logout", authUser,(req, res) => {
   User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, doc) => {

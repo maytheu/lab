@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 
-const experimentSchema = mongoose.Schema({
+const studentSchema = mongoose.Schema({
         subject:{
                 type:String,
                 required: true
@@ -8,12 +8,12 @@ const experimentSchema = mongoose.Schema({
                 type: String,
                 required:true
         },
-	name: {
-		type: String,
-	},
-        tips: [String],                              img:String,
-	properties: [String],
-	precaution: String
+	result: {
+                type: String,
+                required: true
+        },
+	conclusion: String,                          observation: String,
+        note: String
 })
 
-mongoose.model("experiments", experimentSchema)
+mongoose.model("students", studentSchema)

@@ -12,7 +12,9 @@ const app = express()
 //importihg models
 require("./user/userSchema.js")
 require("./experiment/experimentSchema.js")
-
+require("./experiment/subjectSchema.js")
+require("./experiment/topicSchema.js")
+require("./experiment/studentSchema.js")
 
 //Basic configuration
 //
