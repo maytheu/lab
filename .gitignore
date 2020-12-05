@@ -1,3 +1,6 @@
 .env
 /node_modules
 *.swp
+*.swn
+*.swo
+*.swm

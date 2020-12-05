@@ -74,10 +74,8 @@ admin:{
     type: Array,
     default: []
   },
-	note: {
-    type: Array,
-    default: []
-  },
+	question: [],
+	answer:[],
 	loginAttempts: { 
 		type: Number, 
 		required: true,
