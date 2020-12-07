@@ -83,7 +83,8 @@ admin:{
     lockUntil: {
 	    type: Number 
     },
-	lastLogin: Date
+	lastLogin: Date,
+	qRef: String
 })
 
 userSchema.virtual('isLocked').get(function() {

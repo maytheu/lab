@@ -8,6 +8,7 @@ const Topic = mongoose.model("topics")
 
 const  authUser = require("./authUser.js")
 const authTeacher = require("./authTeacher.js")
+const authQuestion = require("./authQuestion.js")
 
 module.exports = (app) =>{
 
@@ -21,7 +22,7 @@ module.exports = (app) =>{
   
   const user = new User({
     email:req.body.email,
-    firstName: req.body.firstName,
+    firstName:req.body.firstName,
 	  lastName: req.body.lastName,
     password:req.body.password,
     username:req.body.username,
@@ -39,7 +40,7 @@ module.exports = (app) =>{
 
 
 //accept username or email
-	app.post("/api/user/login", (req, res) => {
+	app.get("/api/user/login", (req, res) => {
 let isEmail = validateEmail(req.body.email)
 	
   User.getAuthenticated(req.body.email, req.body.password, isEmail, function(err, user, reason) {
@@ -152,12 +153,6 @@ app.get("/api/user/exp/", authUser, (req, res) =>{
 	const exp = "Heat"/*req.query.exp*/
 	Experiment.find({topic:exp}, (err, doc) =>{
 		if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, doc});
-		const expe = convertArrayToObject(doc, "_id")                                      
-		console.log(expe)
-		doc.map(pp =>{
-			console.log(pp._id.toString().expe)
-	//		console.log(convertArrayToObject(pp,pp, _id))
-		})
 	
 	})
 })
@@ -188,41 +183,72 @@ app.post("/api/user/experiment", authUser, (req, res) =>{
 app.post("/api/user/question", authUser, (req, res) =>{
 	const date = new Date()                 
 	const qId = `Q-${SHA1(                    req.user._id                                    ).toString()                                        .substring(0, 5)}${date.getSeconds()}${date.getMilliseconds()}`;
-
+console.log(req.user._id.toString())
 	let question=[]
 	question.push({
 		id: qId,
-		tag: req.query.topic,
+		tag: req.body.topic,
 		username: req.user.username,
-		question: req.body.question
+		question:req.body.question
 	})
 
-	User.findOneAndUpdate({_id: req.user._id},{$push :{question}},(err, doc) =>{
-		if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, doc});
+	User.findOneAndUpdate({_id: req.user._id},{$push :{question}, $set:{qRef:req.user._id}},{new: true}, (err, doc) =>{
+
+		if (err) return res.json({ success: false, err });             
+		res.status(200).json({ success: true, doc});
 	})
 })
 
-
-app.get("/api/user/answer_question", authUser, authTeacher, (req, res) =>{
+//accept qRef, qId, tppic as query 
+app.post("/api/user/answer_question", authUser, authTeacher, (req, res) =>{
 	const date = new Date()
+	let qRef = req.query.qRef
         const aId = `A-${SHA1(
 req.user._id).toString()                                        .substring(0, 5)}${date.getSeconds()}${date.getMilliseconds()}`;
 	let answer = []
 	answer.push({
 		qId: req.query.qid,
 		id: aId,
-		tag: req.query.topic,
+		tag:req.query.topic,
                 username: req.user.username,    
 		answer: req.body.answer
 	})
-	User.findOneAndUpdate({_id: req.user._id},{$push :{answer}},(err, doc) =>{                                if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, doc});
+	User.updateMany({_id:{$in:[ req.user._id, qRef]}},{$push :{answer}},{multi: true},(err, doc) =>{                                if (err) return res.json({ success: false, err });  
+		console.log(doc)
+		res.status(200).json({ success: true});
 	})
 })
+
+
+
+app.get("/api/user/del_quest", authUser, authQuestion, (req, res) =>{
+	let index = req.query.index   
+	console.log(index)
+	
+	User.findOneAndUpdate({_id: req.user._id},{$pull:{ question:{id:req.user.question.splice(index,1)[0].id}}},{new: true}, (err, user) =>{                                                       
+		if (err) return res.json({success: false, err})                                    
+		console.log(user)            
+		return res.status(200).send({                     success: true, question: user.question              })                                                                               
+	})
+})
+
+//accept inddx as query
+app.post("/api/user/edit_quest", authUser, authQuestion, (req, res) =>{
+	let index = req.query.index
+	index--
+	User.findOneAndUpdate({_id: req.user._id, "question.id": req.user.question[index].id}, {$set: {"question.$.tag": req.body.tag, 'question.$.question': req.body.question}}, {new: true}, (err, user) =>{
+		if(err) return rez.json({success: false, err})
+		return res.status(200).send({success: true, question: user.question})
+	})
+})
+
 
 //retur all questions and the answer
 app.get("/api/user/view_question", authUser, (req, res) =>{
 	User.find({},(err, doc) =>{
-	if (err) return res.json({ success: false, err });                                                  res.status(200).json({ success: true, doc});	
+	if (err) return res.json({ success: false, err }); 
+		console.log(doc)
+		return res.status(200).json({ success: true});	
 	})
 })
 
