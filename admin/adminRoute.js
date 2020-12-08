@@ -38,6 +38,15 @@ module.exports = app=>{
 		})
 	})
 
+
+app.post("/api/admin/add_admin", authUser, authAdmin,(req, res) =>{
+	let user = req.user.username
+	User.findOneAndUpdate({username: user}, {$set:{ admin:1}}, (err, admin) =>{
+		if(err) return res.json({siccess: false})
+		res.status(200).json({ success: true })
+	})
+})
+
 //Usaage
 	//this route uses query parameter 
 	///api/admin/add_exp?subject=phy&topic=heat

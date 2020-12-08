@@ -40,7 +40,7 @@ module.exports = (app) =>{
 
 
 //accept username or email
-	app.get("/api/user/login", (req, res) => {
+	app.post("/api/user/login", (req, res) => {
 let isEmail = validateEmail(req.body.email)
 	
   User.getAuthenticated(req.body.email, req.body.password, isEmail, function(err, user, reason) {
@@ -188,8 +188,10 @@ console.log(req.user._id.toString())
 	question.push({
 		id: qId,
 		tag: req.body.topic,
+		title: req.body.title,
 		username: req.user.username,
-		question:req.body.question
+		question:req.body.question,
+		vote: 0
 	})
 
 	User.findOneAndUpdate({_id: req.user._id},{$push :{question}, $set:{qRef:req.user._id}},{new: true}, (err, doc) =>{
@@ -211,7 +213,8 @@ req.user._id).toString()                                        .substring(0, 5)
 		id: aId,
 		tag:req.query.topic,
                 username: req.user.username,    
-		answer: req.body.answer
+		answer: req.body.answer,
+		vote: 0
 	})
 	User.updateMany({_id:{$in:[ req.user._id, qRef]}},{$push :{answer}},{multi: true},(err, doc) =>{                                if (err) return res.json({ success: false, err });  
 		console.log(doc)
@@ -237,11 +240,33 @@ app.post("/api/user/edit_quest", authUser, authQuestion, (req, res) =>{
 	let index = req.query.index
 	index--
 	User.findOneAndUpdate({_id: req.user._id, "question.id": req.user.question[index].id}, {$set: {"question.$.tag": req.body.tag, 'question.$.question': req.body.question}}, {new: true}, (err, user) =>{
-		if(err) return rez.json({success: false, err})
+		if(err) return res.json({success: false, err})
 		return res.status(200).send({success: true, question: user.question})
 	})
 })
 
+//receives users qref abd teacher id wuth biyh questiin and abswer id
+app.post("/api/user/votes", authUser, (req, res) =>{
+	let qRef = req.query.qRef
+	let qId = req.query.qId
+	let aId = req.query.aId
+	let aRef = req.query.aRef
+	let id, vote
+	if(qId===undefined){
+		id = {_id: aRef, "answer.id": aId}
+		vote ={ "answer.$.vote": 1}
+	}else{
+		id = {_id: qRef, "question.id": qId}
+		vote = {"question.$.vote": 1}
+	}
+	console.log(vote)
+
+	User.findOneAndUpdate(id, {$inc: vote }, {new: true}, (err, doc) =>{
+		if(err) return res.json({success: false, err})   
+		console.log(doc)
+		return res.status(200).send({success: true})
+	})
+})
 
 //retur all questions and the answer
 app.get("/api/user/view_question", authUser, (req, res) =>{
@@ -251,6 +276,19 @@ app.get("/api/user/view_question", authUser, (req, res) =>{
 		return res.status(200).json({ success: true});	
 	})
 })
+
+
+app.get("/api/user/share_question", authUser, (req, res) =>{
+	let index = req.query.index
+	index--
+	let qRef = req.query.qRef                         let qId = req.query.qId
+
+
+	let share = req.user.question.splice(index,1)
+	if (err) return res.json({ success: false, err });                                         
+	return res.status(200).json({ success: true, topic: share[0].tag, username: req.user.username, body: req.user.body});
+})
+
 
 app.get("/api/user/logout", authUser,(req, res) => {
   User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, doc) => {
