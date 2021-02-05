@@ -1,14 +1,11 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
-const topicSchema = mongoose.Schema({           
-        subject:{
-                type: String,
-                required:true
-        },
-	topic:{                                                 type: String,                                     required:true,
-		unique: 1
-	}
-})
+const topicSchema = mongoose.Schema({
+  subject: {
+    type: String,
+    required: true,
+  },
+  topic: { type: String, required: true, unique: 1 },
+});
 
- mongoose.model("topics", topicSchema)
-
+mongoose.model("topics", topicSchema);
