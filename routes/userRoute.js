@@ -10,12 +10,9 @@ const authUser = require("../middleware/authUser.js");
 const authTeacher = require("../middleware/authTeacher.js");
 const authQuestion = require("../middleware/authQuestion.js");
 
-module.exports = (app) => {
-  function validateEmail(email) {
-    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(String(email).toLowerCase());
-  }
+const { validateEmail } = require("../utils/util.js");
 
+module.exports = (app) => {
   //register route
   app.post("/api/user/register", (req, res) => {
     const user = new User({

@@ -1,5 +1,4 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -23,7 +22,7 @@ mongoose.connect(process.env.DB_URL, {
 });
 
 //hody parser set up
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 //cookie paser
 app.use(cookieParser());
